@@ -10,7 +10,7 @@
   *           + Main loop
   *
   ******************************************************************************
-  */ 
+  */
 
 /* Includes ------------------------------------------------------------------*/
 #include <WiFi.h>
@@ -29,7 +29,7 @@ RTC_DATA_ATTR int bootCount = 0;
 
 
 /* Entry point ----------------------------------------------------------------*/
-void setup() 
+void setup()
 {
     // Serial port initialization
     Serial.begin(115200);
@@ -46,23 +46,23 @@ void setup()
     mqclient.connect("WetterDisplay",NULL,NULL,mqTopic, 0,true,"offline");
     while (!mqclient.connected()) {
         Serial.println("Connecting to MQTT...");
-     
+
         if (mqclient.connect("WetterDisplay" )) {
-     
-          Serial.println("connected");  
-     
+
+          Serial.println("connected");
+
         } else {
-     
+
           Serial.print("failed with state ");
           Serial.print(mqclient.state());
           delay(2000);
-     
+
         }
     }
-    Serial.println("connected");  
+    Serial.println("connected");
 
     // Icinger: Send "online"-Message to MQTT
-    
+
     mqclient.publish(mqTopic, "online");
     // SPI initialization
     EPD_initSPI();
@@ -76,7 +76,7 @@ void setup()
 }
 
 /* The main loop -------------------------------------------------------------*/
-void loop() 
+void loop()
 {
     // The server state observation
     Srvr__loop();
