@@ -10,7 +10,7 @@
   *           + Uploading images from client part by part
   *
   ******************************************************************************
-  */ 
+  */
 
 /* Includes ------------------------------------------------------------------*/
 //#include <ESP8266WiFi.h>// ESP8266 and WiFi classes
@@ -23,7 +23,7 @@
 #include "html.h"       // HTML page of the tool
 
 /* SSID and password of your WiFi net ----------------------------------------*/
-const char* ssid     = "GUTTI2";//"your ssid";
+const char* ssid     = "";//"your ssid";
 const char* password = "";//"your password";
 const char* mqTopic =  "tele/WetterDisplay/state";
 
@@ -35,8 +35,8 @@ IPAddress myIP; //(192, 168, 1, 55);       // IP address in your local wifi net
 bool isIndexPage = true; // true : GET  request, client needs 'index' page;
                          // false: POST request, server sends empty page.
 /* Server initialization -------------------------------------------------------*/
-void Srvr__setup() 
-{  
+void Srvr__setup()
+{
     Serial.println();
     Serial.println();
     Serial.print("Connecting to ");
@@ -45,10 +45,10 @@ void Srvr__setup()
     // Applying SSID and password
     WiFi.setHostname("ESP32_Wetterdisplay");
 //    WiFi.config(myIP);
-    WiFi.begin(ssid, password); 
+    WiFi.begin(ssid, password);
 
     // Waiting the connection to a router
-    while (WiFi.status() != WL_CONNECTED) 
+    while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);
         Serial.print(".");
@@ -74,8 +74,8 @@ bool Srvr__file(WiFiClient client, int fileIndex, char*fileName)
     Serial.print(fileName);
 
     // Sent to the 'client' the header describing the type of data.
-    client.print(fileIndex == 0 
-    ? "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\n\r\n" 
+    client.print(fileIndex == 0
+    ? "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\n\r\n"
     : "HTTP/1.1 200 OK\r\nContent-Type: text/javascript\r\n\r\n");
 
     // Choose the index of script
@@ -89,21 +89,21 @@ bool Srvr__file(WiFiClient client, int fileIndex, char*fileName)
         case 3: sendJS_C(client); break;
         case 4: sendJS_D(client); break;
     }
-    
+
     client.print("\r\n");
     delay(1);
 
     // Print log message: the end of request processing
     Serial.println(">>>");
-    
+
     return true;
 }
 
 /* The server state observation loop -------------------------------------------*/
-bool Srvr__loop() 
+bool Srvr__loop()
 {
     // Looking for a client trying to connect to the server
-    WiFiClient client = server.available();   
+    WiFiClient client = server.available();
 
     // Exit if there is no any clients
     if (!client) return false;
@@ -127,11 +127,11 @@ bool Srvr__loop()
         // Save it in the buffer and increment its index
         Buff__bufArr[Buff__bufInd++] = (byte)q;
 
-        // If the carachter means the end of line, then... 
+        // If the carachter means the end of line, then...
         if ((q == 10) || (q == 13))
         {
             // Clean the buffer
-            Buff__bufInd = 0; 
+            Buff__bufInd = 0;
             continue;
         }
 
@@ -161,7 +161,7 @@ bool Srvr__loop()
             isIndexPage = false;
 
             // e-Paper driver initialization
-            if (Buff__signature(Buff__bufInd - 4, "EPD")) 
+            if (Buff__signature(Buff__bufInd - 4, "EPD"))
             {
                 Serial.print("\r\nEPD\r\n");
                 // Getting of e-Paper's type
@@ -173,32 +173,32 @@ bool Srvr__loop()
                 // Initialization
                 EPD_dispInit();
                 //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
-                break; 
+                break;
             }
-            
+
             // Image loading
             if (Buff__signature(Buff__bufInd - 4, "LOAD"))
             {
                 // Print log message: image loading
 //                Serial.print("LOAD");
-                
-                // Load data into the e-Paper 
+
+                // Load data into the e-Paper
                 // if there is loading function for current channel (black or red)
-                if (EPD_dispLoad != 0) EPD_dispLoad();   
-                //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");  
+                if (EPD_dispLoad != 0) EPD_dispLoad();
+                //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
                 break;
             }
-            
+
             // Select the next data channel
             if (Buff__signature(Buff__bufInd - 4, "NEXT"))
             {
                 // Print log message: next data channel
                 Serial.print("NEXT");
 
-                // Instruction code for for writting data into 
+                // Instruction code for for writting data into
                 // e-Paper's memory
                 int code = EPD_dispMass[EPD_dispIndex].next;
-        
+
                 // If the instruction code isn't '-1', then...
                 if (code != -1)
                 {
@@ -215,9 +215,9 @@ bool Srvr__loop()
                 //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
                 break;
             }
-            
+
             // If the loading is complete, then...
-            if (Buff__signature(Buff__bufInd - 4, "SHOW")) 
+            if (Buff__signature(Buff__bufInd - 4, "SHOW"))
             {
                 // Show results and Sleep
                 EPD_dispMass[EPD_dispIndex].show();
@@ -231,14 +231,14 @@ bool Srvr__loop()
                 delay(1000);
                 mqclient.publish(mqTopic, "sleep");
                 Serial.println("\r\nGoing to DeepSleep");
-                Serial.flush(); 
+                Serial.flush();
 
     // Icinger: Send ESP to deepsleep
-                
+
                 esp_deep_sleep_start();
-                
+
                 ESP.restart();
-                break; 
+                break;
             }
 
             // If the routine reaches this code,
@@ -257,7 +257,7 @@ bool Srvr__loop()
 
     // Send the 'index' page if it's needed
     if (isIndexPage) sendHtml(client, myIP); else client.print("Ok!");
-    
+
     client.print("\r\n");
     delay(1);
 
